@@ -1,0 +1,62 @@
+# RECOVER - full stack.
+#
+#   docker compose up --build
+#   -> API   http://localhost:8000  (docs at /docs)
+#   -> Web   http://localhost:3000
+#
+# Postgres is the database here. Outside Docker the API falls back to SQLite so
+# a clean clone runs with no infrastructure at all - see docs/decisions.md
+# (ADR-009) for why both are supported.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: recover
+      POSTGRES_PASSWORD: recover
+      POSTGRES_DB: recover
+    ports:
+      - "5432:5432"
+    volumes:
+      - recover-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recover -d recover"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://recover:recover@db:5432/recover
+      PUBLIC_WEB_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      # Passed through from your shell or .env; blank is fine.
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m recover.bootstrap &&
+             python -m uvicorn recover.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  recover-db:

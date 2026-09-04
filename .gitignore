@@ -1,0 +1,47 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Databases (generated - never commit)
+*.db
+*.db-wal
+*.db-shm
+recover.db
+apps/api/e2e.db
+
+# Generated data and results
+data/
+apps/api/recover/tuning.json.bak
+
+# Node / Next
+node_modules/
+.next/
+out/
+next-env.d.ts
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Logs and editor cruft
+*.log
+api.err
+web.err
+.DS_Store
+.idea/
+.vscode/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
